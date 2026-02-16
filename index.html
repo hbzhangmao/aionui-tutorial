@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AionUi 实现原理教程</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--bg2:#161822;--bg3:#1e2030;--text:#c8cad8;--text2:#8890a4;--accent:#60a5fa;--green:#34d399;--orange:#fb923c;--pink:#f472b6;--purple:#a78bfa;--red:#f87171;--yellow:#fbbf24;--border:#2a2d3e}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:16px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* 侧边导航 */
+.sidebar{position:fixed;left:0;top:0;width:260px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:20px 0;z-index:100}
+.sidebar .logo{padding:0 20px 20px;font-size:22px;font-weight:700;color:#fff;border-bottom:1px solid var(--border)}
+.sidebar .logo span{color:var(--accent)}
+.sidebar nav{padding:15px 0}
+.sidebar nav a{display:block;padding:8px 20px;color:var(--text2);font-size:14px;transition:all .2s}
+.sidebar nav a:hover,.sidebar nav a.active{color:var(--accent);background:rgba(96,165,250,.08);text-decoration:none}
+.sidebar nav a.sub{padding-left:36px;font-size:13px}
+
+/* 主内容 */
+.main{margin-left:260px;padding:40px 50px;max-width:960px}
+.main h1{font-size:32px;color:#fff;margin-bottom:8px}
+.main .subtitle{color:var(--text2);margin-bottom:40px;font-size:15px}
+.main h2{font-size:24px;color:#fff;margin:50px 0 20px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.main h3{font-size:18px;color:var(--accent);margin:30px 0 15px}
+.main p{margin-bottom:14px}
+.main ul,.main ol{margin:0 0 14px 20px}
+.main li{margin-bottom:6px}
+
+/* 代码块 */
+.code-block{position:relative;background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin:14px 0 20px;overflow:hidden}
+.code-block pre{margin:0;padding:18px 20px;overflow-x:auto;font-family:'Fira Code','JetBrains Mono',Consolas,'Courier New',monospace;font-size:13.5px;line-height:1.75;white-space:pre;color:var(--text);-webkit-overflow-scrolling:touch}
+.code-block .kw{color:var(--purple)}
+.code-block .fn{color:var(--accent)}
+.code-block .str{color:var(--green)}
+.code-block .cmt{color:#6a7080;font-style:italic}
+.code-block .cls{color:var(--yellow)}
+.code-block .op{color:var(--pink)}
+.code-block .num{color:var(--orange)}
+.code-block .dec{color:var(--pink)}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+.code-header .lang{font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.copy-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);padding:3px 10px;font-size:11px;cursor:pointer;transition:all .2s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.copy-btn.copied{color:var(--green);border-color:var(--green)}
+.code-header .file-path{color:var(--text2);font-size:11px;margin-left:8px;font-style:italic}
+code{background:rgba(96,165,250,.1);color:var(--accent);padding:2px 7px;border-radius:4px;font-family:'Fira Code','JetBrains Mono',Consolas,monospace;font-size:0.88em}
+
+/* 标签 */
+.tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;margin:2px 4px 2px 0}
+.tag-blue{background:rgba(96,165,250,.15);color:var(--accent)}
+.tag-green{background:rgba(52,211,153,.15);color:var(--green)}
+.tag-orange{background:rgba(251,146,60,.15);color:var(--orange)}
+.tag-pink{background:rgba(244,114,182,.15);color:var(--pink)}
+.tag-purple{background:rgba(167,139,250,.15);color:var(--purple)}
+
+/* 表格 */
+table{width:100%;border-collapse:collapse;margin:14px 0 20px;font-size:14px}
+th{background:var(--bg3);color:var(--accent);text-align:left;padding:10px 14px;border:1px solid var(--border)}
+td{padding:10px 14px;border:1px solid var(--border)}
+tr:hover td{background:rgba(96,165,250,.04)}
+
+/* 架构图 */
+.arch-diagram{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:30px 20px;margin:20px 0 30px;overflow-x:auto}
+.arch-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+.arch-box{padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;text-align:center;white-space:nowrap;min-width:80px}
+.arch-box.user{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
+.arch-box.channel{background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff}
+.arch-box.bus{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff}
+.arch-box.agent{background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:14px 24px;font-size:15px}
+.arch-box.llm{background:linear-gradient(135deg,#ec4899,#db2777);color:#fff}
+.arch-box.tool{background:linear-gradient(135deg,#06b6d4,#0891b2);color:#fff}
+.arch-box.memory{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff}
+.arch-box.skill{background:linear-gradient(135deg,#a855f7,#9333ea);color:#fff}
+.arch-box.renderer{background:linear-gradient(135deg,#14b8a6,#0d9488);color:#fff}
+.arch-box.webui{background:linear-gradient(135deg,#f43f5e,#e11d48);color:#fff}
+.arch-box.db{background:linear-gradient(135deg,#78716c,#57534e);color:#fff}
+.arch-box.ipc{background:linear-gradient(135deg,#eab308,#ca8a04);color:#fff}
+.arch-arrow{color:var(--text2);font-size:20px;font-weight:700}
+.arch-arrow-down{text-align:center;color:var(--text2);font-size:20px;margin:4px 0}
+.arch-label{font-size:11px;color:var(--text2);text-align:center;margin-top:2px}
+.arch-group{display:flex;flex-direction:column;align-items:center;gap:4px}
+.arch-channels{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.arch-channels .mini{padding:5px 10px;border-radius:6px;font-size:11px;background:rgba(139,92,246,.2);color:var(--purple);border:1px solid rgba(139,92,246,.3)}
+
+/* 流程图 */
+.flow{display:flex;flex-direction:column;gap:0;margin:20px 0}
+.flow-step{display:flex;align-items:flex-start;gap:14px;padding:12px 0}
+.flow-num{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.flow-content{flex:1}
+.flow-content strong{color:#fff}
+.flow-line{width:32px;display:flex;justify-content:center}
+.flow-line::after{content:'';display:block;width:2px;height:20px;background:var(--border)}
+
+/* 卡片 */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;margin:14px 0}
+.card-title{color:#fff;font-weight:700;margin-bottom:8px}
+
+/* 树形结构 */
+.tree{position:relative;background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin:14px 0;overflow:hidden}
+.tree .tree-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+.tree .tree-header .lang{font-weight:600;letter-spacing:.5px}
+.tree pre{margin:0;padding:18px 20px;overflow-x:auto;font-family:'Fira Code','JetBrains Mono',Consolas,'Courier New',monospace;font-size:13px;line-height:1.85;white-space:pre;color:var(--text);-webkit-overflow-scrolling:touch}
+.tree .dir{color:var(--yellow);font-weight:600}
+.tree .file{color:var(--text)}
+.tree .desc{color:#6a7080;font-style:italic}
+.tree .connector{color:var(--border)}
+
+/* 手机菜单按钮 */
+.menu-btn{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);color:#fff;font-size:20px;cursor:pointer;align-items:center;justify-content:center}
+
+/* 响应式 */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);transition:transform .3s;width:280px}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0;padding:20px 16px;padding-top:60px}
+  .menu-btn{display:flex}
+  .arch-row{gap:4px}
+  .arch-box{padding:7px 12px;font-size:11px;min-width:60px}
+  .main h1{font-size:24px}
+  .main h2{font-size:20px}
+}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+.overlay.show{display:block}
+
+/* 页脚 */
+footer{margin-top:60px;padding:20px 0;border-top:1px solid var(--border);color:var(--text2);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+
+<button class="menu-btn" onclick="toggleMenu()">☰</button>
+<div class="overlay" onclick="toggleMenu()"></div>
+
+<aside class="sidebar">
+  <div class="logo">🖥️ <span>AionUi</span> 原理教程</div>
+  <nav>
+    <a href="#intro">项目简介</a>
+    <a href="#tech">技术栈</a>
+    <a href="#tech-core" class="sub">核心框架</a>
+    <a href="#tech-ai" class="sub">AI/LLM SDK</a>
+    <a href="#tech-chat" class="sub">聊天平台</a>
+    <a href="#tech-doc" class="sub">文档处理</a>
+    <a href="#structure">目录结构</a>
+    <a href="#modules">核心模块详解</a>
+    <a href="#mod-agent" class="sub">Agent 系统</a>
+    <a href="#mod-channels" class="sub">Channels 框架</a>
+    <a href="#mod-webui" class="sub">WebUI 服务器</a>
+    <a href="#mod-renderer" class="sub">渲染进程 UI</a>
+    <a href="#mod-cron" class="sub">定时任务</a>
+    <a href="#mod-skills" class="sub">助手与技能</a>
+    <a href="#arch">架构设计</a>
+    <a href="#arch-overview" class="sub">整体架构</a>
+    <a href="#arch-patterns" class="sub">设计模式</a>
+    <a href="#arch-dataflow" class="sub">数据流</a>
+    <a href="#features">主要功能</a>
+    <a href="#summary">总结</a>
+  </nav>
+</aside>
+
+<main class="main">
+
+<!-- 项目简介 -->
+<h1>AionUi 🖥️ 实现原理教程</h1>
+<p class="subtitle">基于 iOfficeAI/AionUi 项目源码分析 · 版本 1.8.11 · 多 Agent 桌面应用框架</p>
+
+<h2 id="intro">项目简介</h2>
+<p>AionUi 是一个免费、开源的多 Agent 桌面应用，为命令行 AI 工具（Gemini CLI、Claude Code、Codex、Qwen Code、Goose CLI、OpenClaw、Auggie 等）提供统一的图形化界面。项目定位为 <strong>Claude Cowork 的开源替代方案</strong>，具备自动化任务执行、工作流编排和跨平台能力。</p>
+
+<table>
+  <tr><th>属性</th><th>值</th></tr>
+  <tr><td>仓库地址</td><td><a href="https://github.com/iOfficeAI/AionUi" target="_blank">github.com/iOfficeAI/AionUi</a></td></tr>
+  <tr><td>官网</td><td><a href="https://www.aionui.com" target="_blank">www.aionui.com</a></td></tr>
+  <tr><td>主语言</td><td><span class="tag tag-blue">TypeScript</span></td></tr>
+  <tr><td>许可证</td><td>Apache-2.0</td></tr>
+  <tr><td>当前版本</td><td>1.8.11</td></tr>
+  <tr><td>Star 数</td><td>16,002 ⭐</td></tr>
+  <tr><td>支持平台</td><td><span class="tag tag-green">macOS</span> <span class="tag tag-blue">Windows</span> <span class="tag tag-orange">Linux</span></td></tr>
+  <tr><td>创建时间</td><td>2025-08-07</td></tr>
+</table>
+
+<p>主题标签：<span class="tag tag-purple">ai-agent</span> <span class="tag tag-purple">claude-code</span> <span class="tag tag-purple">codex</span> <span class="tag tag-purple">gemini-cli</span> <span class="tag tag-purple">cowork</span> <span class="tag tag-purple">webui</span> <span class="tag tag-purple">skills</span> <span class="tag tag-purple">llm</span></p>
+
+<!-- 技术栈 -->
+<h2 id="tech">技术栈</h2>
+
+<h3 id="tech-core">2.1 核心框架</h3>
+<table>
+  <tr><th>层级</th><th>技术</th><th>用途</th></tr>
+  <tr><td>桌面框架</td><td>Electron 37.x</td><td>跨平台桌面应用</td></tr>
+  <tr><td>前端框架</td><td>React 19 + TypeScript 5.8</td><td>UI 渲染</td></tr>
+  <tr><td>UI 组件库</td><td>Arco Design</td><td>企业级组件</td></tr>
+  <tr><td>CSS 方案</td><td>UnoCSS</td><td>原子化 CSS</td></tr>
+  <tr><td>路由</td><td>React Router DOM 7.x</td><td>SPA 路由</td></tr>
+  <tr><td>状态管理</td><td>SWR + React Context</td><td>数据获取与状态</td></tr>
+  <tr><td>构建工具</td><td>Webpack (Electron Forge)</td><td>打包构建</td></tr>
+  <tr><td>代码编辑器</td><td>Monaco Editor + CodeMirror</td><td>代码编辑/预览</td></tr>
+  <tr><td>数据库</td><td>better-sqlite3</td><td>本地 SQLite 存储</td></tr>
+  <tr><td>Web 服务器</td><td>Express 5 + WebSocket</td><td>WebUI 远程访问</td></tr>
+  <tr><td>测试</td><td>Jest 30 + ts-jest</td><td>单元测试</td></tr>
+  <tr><td>代码规范</td><td>ESLint + Prettier + Husky</td><td>代码质量</td></tr>
+</table>
+
+<h3 id="tech-ai">2.2 AI/LLM SDK</h3>
+<table>
+  <tr><th>SDK</th><th>用途</th></tr>
+  <tr><td><code>@google/genai</code></td><td>Gemini 模型集成（内置）</td></tr>
+  <tr><td><code>@anthropic-ai/sdk</code></td><td>Claude/Anthropic 模型</td></tr>
+  <tr><td><code>openai</code></td><td>OpenAI 兼容接口</td></tr>
+  <tr><td><code>@aws-sdk/client-bedrock</code></td><td>AWS Bedrock 模型</td></tr>
+  <tr><td><code>@modelcontextprotocol/sdk</code></td><td>MCP 协议支持</td></tr>
+  <tr><td><code>@office-ai/aioncli-core</code></td><td>AionUI CLI 核心库</td></tr>
+  <tr><td><code>@office-ai/platform</code></td><td>平台抽象层</td></tr>
+</table>
+
+<h3 id="tech-chat">2.3 聊天平台集成</h3>
+<table>
+  <tr><th>平台</th><th>SDK</th><th>连接方式</th></tr>
+  <tr><td>Telegram</td><td>grammY</td><td>长轮询 (Long Polling)</td></tr>
+  <tr><td>飞书 (Lark)</td><td>@larksuiteoapi/node-sdk</td><td>WebSocket 长连接</td></tr>
+  <tr><td>钉钉 (DingTalk)</td><td>dingtalk-stream</td><td>WebSocket Stream + AI Card</td></tr>
+</table>
+
+<h3 id="tech-doc">2.4 文档处理</h3>
+<table>
+  <tr><th>库</th><th>用途</th></tr>
+  <tr><td><code>docx</code></td><td>Word 文档生成</td></tr>
+  <tr><td><code>xlsx-republish</code></td><td>Excel 处理</td></tr>
+  <tr><td><code>pptx2json</code></td><td>PPT 解析</td></tr>
+  <tr><td><code>mammoth</code></td><td>Word 转 HTML</td></tr>
+  <tr><td><code>sharp</code></td><td>图片处理</td></tr>
+  <tr><td><code>turndown</code></td><td>HTML 转 Markdown</td></tr>
+  <tr><td><code>katex / rehype-katex</code></td><td>数学公式渲染</td></tr>
+  <tr><td><code>diff2html</code></td><td>Diff 文件渲染</td></tr>
+</table>
+
