@@ -6,7 +6,7 @@
 <title>AionUi 实现原理教程</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0f1117;--bg2:#161822;--bg3:#1e2030;--text:#c8cad8;--text2:#8890a4;--accent:#60a5fa;--green:#34d399;--orange:#fb923c;--pink:#f472b6;--purple:#a78bfa;--red:#f87171;--yellow:#fbbf24;--border:#2a2d3e}
+:root{--bg:#1a1a2e;--bg2:#16213e;--bg3:#0f3460;--text:#e0e0e0;--text2:#8892a4;--accent:#60a5fa;--green:#34d399;--orange:#fb923c;--pink:#f472b6;--purple:#a78bfa;--red:#f87171;--yellow:#fbbf24;--border:#2a2d4e;--cyan:#22d3ee}
 html{scroll-behavior:smooth}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:16px}
 a{color:var(--accent);text-decoration:none}
@@ -15,11 +15,10 @@ a:hover{text-decoration:underline}
 /* 侧边导航 */
 .sidebar{position:fixed;left:0;top:0;width:260px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:20px 0;z-index:100}
 .sidebar .logo{padding:0 20px 20px;font-size:22px;font-weight:700;color:#fff;border-bottom:1px solid var(--border)}
-.sidebar .logo span{color:var(--accent)}
+.sidebar .logo span{color:var(--cyan)}
 .sidebar nav{padding:15px 0}
-.sidebar nav a{display:block;padding:8px 20px;color:var(--text2);font-size:14px;transition:all .2s}
-.sidebar nav a:hover,.sidebar nav a.active{color:var(--accent);background:rgba(96,165,250,.08);text-decoration:none}
-.sidebar nav a.sub{padding-left:36px;font-size:13px}
+.sidebar nav a{display:block;padding:9px 20px;color:var(--text2);font-size:14px;transition:all .2s;border-left:3px solid transparent}
+.sidebar nav a:hover,.sidebar nav a.active{color:var(--accent);background:rgba(96,165,250,.08);text-decoration:none;border-left-color:var(--accent)}
 
 /* 主内容 */
 .main{margin-left:260px;padding:40px 50px;max-width:960px}
@@ -42,6 +41,8 @@ a:hover{text-decoration:underline}
 .code-block .op{color:var(--pink)}
 .code-block .num{color:var(--orange)}
 .code-block .dec{color:var(--pink)}
+.code-block .tag-name{color:var(--red)}
+.code-block .attr{color:var(--orange)}
 .code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
 .code-header .lang{font-weight:600;text-transform:uppercase;letter-spacing:.5px}
 .copy-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);padding:3px 10px;font-size:11px;cursor:pointer;transition:all .2s}
@@ -57,6 +58,8 @@ code{background:rgba(96,165,250,.1);color:var(--accent);padding:2px 7px;border-r
 .tag-orange{background:rgba(251,146,60,.15);color:var(--orange)}
 .tag-pink{background:rgba(244,114,182,.15);color:var(--pink)}
 .tag-purple{background:rgba(167,139,250,.15);color:var(--purple)}
+.tag-cyan{background:rgba(34,211,238,.15);color:var(--cyan)}
+.tag-red{background:rgba(248,113,113,.15);color:var(--red)}
 
 /* 表格 */
 table{width:100%;border-collapse:collapse;margin:14px 0 20px;font-size:14px}
@@ -76,16 +79,13 @@ tr:hover td{background:rgba(96,165,250,.04)}
 .arch-box.tool{background:linear-gradient(135deg,#06b6d4,#0891b2);color:#fff}
 .arch-box.memory{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff}
 .arch-box.skill{background:linear-gradient(135deg,#a855f7,#9333ea);color:#fff}
-.arch-box.renderer{background:linear-gradient(135deg,#14b8a6,#0d9488);color:#fff}
-.arch-box.webui{background:linear-gradient(135deg,#f43f5e,#e11d48);color:#fff}
-.arch-box.db{background:linear-gradient(135deg,#78716c,#57534e);color:#fff}
-.arch-box.ipc{background:linear-gradient(135deg,#eab308,#ca8a04);color:#fff}
+.arch-box.server{background:linear-gradient(135deg,#14b8a6,#0d9488);color:#fff}
+.arch-box.renderer{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff}
+.arch-box.cron{background:linear-gradient(135deg,#f43f5e,#e11d48);color:#fff}
 .arch-arrow{color:var(--text2);font-size:20px;font-weight:700}
 .arch-arrow-down{text-align:center;color:var(--text2);font-size:20px;margin:4px 0}
 .arch-label{font-size:11px;color:var(--text2);text-align:center;margin-top:2px}
 .arch-group{display:flex;flex-direction:column;align-items:center;gap:4px}
-.arch-channels{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
-.arch-channels .mini{padding:5px 10px;border-radius:6px;font-size:11px;background:rgba(139,92,246,.2);color:var(--purple);border:1px solid rgba(139,92,246,.3)}
 
 /* 流程图 */
 .flow{display:flex;flex-direction:column;gap:0;margin:20px 0}
@@ -136,105 +136,698 @@ footer{margin-top:60px;padding:20px 0;border-top:1px solid var(--border);color:v
 <button class="menu-btn" onclick="toggleMenu()">☰</button>
 <div class="overlay" onclick="toggleMenu()"></div>
 
+<!-- 右上角导航按钮 -->
+<a href="https://hbzhangmao.github.io/portal/" style="position:fixed;top:12px;right:12px;z-index:9999;background:rgba(99,102,241,0.9);color:#fff;text-decoration:none;padding:6px 14px;border-radius:20px;font-size:13px;font-family:-apple-system,sans-serif;backdrop-filter:blur(8px);box-shadow:0 2px 8px rgba(0,0,0,0.3);transition:opacity 0.2s;opacity:0.7;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">🏠 导航</a>
+
 <aside class="sidebar">
-  <div class="logo">🖥️ <span>AionUi</span> 原理教程</div>
+  <div class="logo">🤖 <span>AionUi</span> 原理教程</div>
   <nav>
-    <a href="#intro">项目简介</a>
-    <a href="#tech">技术栈</a>
-    <a href="#tech-core" class="sub">核心框架</a>
-    <a href="#tech-ai" class="sub">AI/LLM SDK</a>
-    <a href="#tech-chat" class="sub">聊天平台</a>
-    <a href="#tech-doc" class="sub">文档处理</a>
-    <a href="#structure">目录结构</a>
-    <a href="#modules">核心模块详解</a>
-    <a href="#mod-agent" class="sub">Agent 系统</a>
-    <a href="#mod-channels" class="sub">Channels 框架</a>
-    <a href="#mod-webui" class="sub">WebUI 服务器</a>
-    <a href="#mod-renderer" class="sub">渲染进程 UI</a>
-    <a href="#mod-cron" class="sub">定时任务</a>
-    <a href="#mod-skills" class="sub">助手与技能</a>
-    <a href="#arch">架构设计</a>
-    <a href="#arch-overview" class="sub">整体架构</a>
-    <a href="#arch-patterns" class="sub">设计模式</a>
-    <a href="#arch-dataflow" class="sub">数据流</a>
-    <a href="#features">主要功能</a>
-    <a href="#summary">总结</a>
+    <a href="#intro">1. 项目简介</a>
+    <a href="#tech">2. 技术栈</a>
+    <a href="#structure">3. 目录结构</a>
+    <a href="#agent">4. Agent 系统</a>
+    <a href="#channels">5. Channels 消息框架</a>
+    <a href="#webui">6. WebUI 服务器</a>
+    <a href="#renderer">7. 渲染进程 UI</a>
+    <a href="#cron">8. 定时任务系统</a>
+    <a href="#assistants">9. 助手与技能系统</a>
+    <a href="#architecture">10. 架构设计</a>
+    <a href="#features">11. 主要功能</a>
+    <a href="#summary">12. 总结</a>
   </nav>
 </aside>
+
+<script>
+// 汉堡菜单
+function toggleMenu(){
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.querySelector('.overlay').classList.toggle('show');
+}
+document.querySelectorAll('.sidebar nav a').forEach(a=>{
+  a.addEventListener('click',()=>{
+    document.querySelector('.sidebar').classList.remove('open');
+    document.querySelector('.overlay').classList.remove('show');
+  });
+});
+
+// 滚动时导航高亮 (IntersectionObserver)
+document.addEventListener('DOMContentLoaded',()=>{
+  const sections = document.querySelectorAll('h2[id]');
+  const navLinks = document.querySelectorAll('.sidebar nav a');
+  if(!sections.length) return;
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const id = entry.target.getAttribute('id');
+        navLinks.forEach(link=>{
+          link.classList.toggle('active', link.getAttribute('href')==='#'+id);
+        });
+      }
+    });
+  },{rootMargin:'-10% 0px -80% 0px',threshold:0});
+  sections.forEach(sec=>observer.observe(sec));
+});
+
+// 复制代码
+function copyCode(btn){
+  const pre = btn.closest('.code-block').querySelector('pre');
+  const text = pre.innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='已复制';
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='复制';btn.classList.remove('copied');},2000);
+  }).catch(()=>{
+    const range=document.createRange();
+    range.selectNodeContents(pre);
+    const sel=window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('copy');
+    sel.removeAllRanges();
+    btn.textContent='已复制';
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='复制';btn.classList.remove('copied');},2000);
+  });
+}
+</script>
 
 <main class="main">
 
 <!-- 项目简介 -->
-<h1>AionUi 🖥️ 实现原理教程</h1>
-<p class="subtitle">基于 iOfficeAI/AionUi 项目源码分析 · 版本 1.8.11 · 多 Agent 桌面应用框架</p>
-
-<h2 id="intro">项目简介</h2>
+<section id="intro">
+<h2>📋 项目简介</h2>
 <p>AionUi 是一个免费、开源的多 Agent 桌面应用，为命令行 AI 工具（Gemini CLI、Claude Code、Codex、Qwen Code、Goose CLI、OpenClaw、Auggie 等）提供统一的图形化界面。项目定位为 <strong>Claude Cowork 的开源替代方案</strong>，具备自动化任务执行、工作流编排和跨平台能力。</p>
 
 <table>
-  <tr><th>属性</th><th>值</th></tr>
-  <tr><td>仓库地址</td><td><a href="https://github.com/iOfficeAI/AionUi" target="_blank">github.com/iOfficeAI/AionUi</a></td></tr>
-  <tr><td>官网</td><td><a href="https://www.aionui.com" target="_blank">www.aionui.com</a></td></tr>
-  <tr><td>主语言</td><td><span class="tag tag-blue">TypeScript</span></td></tr>
-  <tr><td>许可证</td><td>Apache-2.0</td></tr>
-  <tr><td>当前版本</td><td>1.8.11</td></tr>
-  <tr><td>Star 数</td><td>16,002 ⭐</td></tr>
-  <tr><td>支持平台</td><td><span class="tag tag-green">macOS</span> <span class="tag tag-blue">Windows</span> <span class="tag tag-orange">Linux</span></td></tr>
-  <tr><td>创建时间</td><td>2025-08-07</td></tr>
+<tr><th>属性</th><th>值</th></tr>
+<tr><td>仓库地址</td><td><a href="https://github.com/iOfficeAI/AionUi" target="_blank">github.com/iOfficeAI/AionUi</a></td></tr>
+<tr><td>官网</td><td><a href="https://www.aionui.com" target="_blank">aionui.com</a></td></tr>
+<tr><td>主语言</td><td>TypeScript</td></tr>
+<tr><td>许可证</td><td>Apache-2.0</td></tr>
+<tr><td>当前版本</td><td>1.8.11</td></tr>
+<tr><td>Star 数</td><td>16,002</td></tr>
+<tr><td>支持平台</td><td>macOS / Windows / Linux</td></tr>
+<tr><td>创建时间</td><td>2025-08-07</td></tr>
 </table>
 
-<p>主题标签：<span class="tag tag-purple">ai-agent</span> <span class="tag tag-purple">claude-code</span> <span class="tag tag-purple">codex</span> <span class="tag tag-purple">gemini-cli</span> <span class="tag tag-purple">cowork</span> <span class="tag tag-purple">webui</span> <span class="tag tag-purple">skills</span> <span class="tag tag-purple">llm</span></p>
+<p>主题标签：<code>ai-agent</code> <code>chat</code> <code>claude-code</code> <code>codex</code> <code>cowork</code> <code>gemini-cli</code> <code>llm</code> <code>openclaw</code> <code>skills</code> <code>webui</code></p>
+</section>
 
 <!-- 技术栈 -->
-<h2 id="tech">技术栈</h2>
+<section id="tech">
+<h2>🛠️ 技术栈</h2>
 
-<h3 id="tech-core">2.1 核心框架</h3>
+<h3>核心框架</h3>
 <table>
-  <tr><th>层级</th><th>技术</th><th>用途</th></tr>
-  <tr><td>桌面框架</td><td>Electron 37.x</td><td>跨平台桌面应用</td></tr>
-  <tr><td>前端框架</td><td>React 19 + TypeScript 5.8</td><td>UI 渲染</td></tr>
-  <tr><td>UI 组件库</td><td>Arco Design</td><td>企业级组件</td></tr>
-  <tr><td>CSS 方案</td><td>UnoCSS</td><td>原子化 CSS</td></tr>
-  <tr><td>路由</td><td>React Router DOM 7.x</td><td>SPA 路由</td></tr>
-  <tr><td>状态管理</td><td>SWR + React Context</td><td>数据获取与状态</td></tr>
-  <tr><td>构建工具</td><td>Webpack (Electron Forge)</td><td>打包构建</td></tr>
-  <tr><td>代码编辑器</td><td>Monaco Editor + CodeMirror</td><td>代码编辑/预览</td></tr>
-  <tr><td>数据库</td><td>better-sqlite3</td><td>本地 SQLite 存储</td></tr>
-  <tr><td>Web 服务器</td><td>Express 5 + WebSocket</td><td>WebUI 远程访问</td></tr>
-  <tr><td>测试</td><td>Jest 30 + ts-jest</td><td>单元测试</td></tr>
-  <tr><td>代码规范</td><td>ESLint + Prettier + Husky</td><td>代码质量</td></tr>
+<tr><th>层级</th><th>技术</th></tr>
+<tr><td>桌面框架</td><td>Electron 37.x</td></tr>
+<tr><td>前端框架</td><td>React 19 + TypeScript 5.8</td></tr>
+<tr><td>UI 组件库</td><td>Arco Design (@arco-design/web-react)</td></tr>
+<tr><td>CSS 方案</td><td>UnoCSS</td></tr>
+<tr><td>路由</td><td>React Router DOM 7.x</td></tr>
+<tr><td>状态管理</td><td>SWR + React Context</td></tr>
+<tr><td>构建工具</td><td>Webpack (Electron Forge + Electron Builder)</td></tr>
+<tr><td>代码编辑器</td><td>Monaco Editor + CodeMirror</td></tr>
+<tr><td>数据库</td><td>better-sqlite3 (本地 SQLite)</td></tr>
+<tr><td>Web 服务器</td><td>Express 5 + WebSocket (ws)</td></tr>
+<tr><td>测试</td><td>Jest 30 + ts-jest</td></tr>
 </table>
 
-<h3 id="tech-ai">2.2 AI/LLM SDK</h3>
+<h3>AI / LLM SDK</h3>
 <table>
-  <tr><th>SDK</th><th>用途</th></tr>
-  <tr><td><code>@google/genai</code></td><td>Gemini 模型集成（内置）</td></tr>
-  <tr><td><code>@anthropic-ai/sdk</code></td><td>Claude/Anthropic 模型</td></tr>
-  <tr><td><code>openai</code></td><td>OpenAI 兼容接口</td></tr>
-  <tr><td><code>@aws-sdk/client-bedrock</code></td><td>AWS Bedrock 模型</td></tr>
-  <tr><td><code>@modelcontextprotocol/sdk</code></td><td>MCP 协议支持</td></tr>
-  <tr><td><code>@office-ai/aioncli-core</code></td><td>AionUI CLI 核心库</td></tr>
-  <tr><td><code>@office-ai/platform</code></td><td>平台抽象层</td></tr>
+<tr><th>SDK</th><th>用途</th></tr>
+<tr><td>@google/genai</td><td>Gemini 模型集成（内置）</td></tr>
+<tr><td>@anthropic-ai/sdk</td><td>Claude / Anthropic 模型</td></tr>
+<tr><td>openai</td><td>OpenAI 兼容接口</td></tr>
+<tr><td>@aws-sdk/client-bedrock</td><td>AWS Bedrock 模型</td></tr>
+<tr><td>@modelcontextprotocol/sdk</td><td>MCP 协议支持</td></tr>
+<tr><td>@office-ai/aioncli-core</td><td>AionUI CLI 核心库</td></tr>
 </table>
 
-<h3 id="tech-chat">2.3 聊天平台集成</h3>
+<h3>聊天平台集成</h3>
 <table>
-  <tr><th>平台</th><th>SDK</th><th>连接方式</th></tr>
-  <tr><td>Telegram</td><td>grammY</td><td>长轮询 (Long Polling)</td></tr>
-  <tr><td>飞书 (Lark)</td><td>@larksuiteoapi/node-sdk</td><td>WebSocket 长连接</td></tr>
-  <tr><td>钉钉 (DingTalk)</td><td>dingtalk-stream</td><td>WebSocket Stream + AI Card</td></tr>
+<tr><th>平台</th><th>SDK</th><th>连接方式</th></tr>
+<tr><td>Telegram</td><td>grammY</td><td>长轮询 (Long Polling)</td></tr>
+<tr><td>飞书 (Lark)</td><td>@larksuiteoapi/node-sdk</td><td>WebSocket 长连接</td></tr>
+<tr><td>钉钉 (DingTalk)</td><td>dingtalk-stream</td><td>WebSocket Stream + AI Card</td></tr>
 </table>
 
-<h3 id="tech-doc">2.4 文档处理</h3>
+<h3>文档处理</h3>
 <table>
-  <tr><th>库</th><th>用途</th></tr>
-  <tr><td><code>docx</code></td><td>Word 文档生成</td></tr>
-  <tr><td><code>xlsx-republish</code></td><td>Excel 处理</td></tr>
-  <tr><td><code>pptx2json</code></td><td>PPT 解析</td></tr>
-  <tr><td><code>mammoth</code></td><td>Word 转 HTML</td></tr>
-  <tr><td><code>sharp</code></td><td>图片处理</td></tr>
-  <tr><td><code>turndown</code></td><td>HTML 转 Markdown</td></tr>
-  <tr><td><code>katex / rehype-katex</code></td><td>数学公式渲染</td></tr>
-  <tr><td><code>diff2html</code></td><td>Diff 文件渲染</td></tr>
+<tr><th>库</th><th>用途</th></tr>
+<tr><td>docx</td><td>Word 文档生成</td></tr>
+<tr><td>xlsx-republish</td><td>Excel 处理</td></tr>
+<tr><td>pptx2json</td><td>PPT 解析</td></tr>
+<tr><td>mammoth</td><td>Word 转 HTML</td></tr>
+<tr><td>sharp</td><td>图片处理</td></tr>
+<tr><td>turndown</td><td>HTML 转 Markdown</td></tr>
+<tr><td>katex / rehype-katex</td><td>数学公式渲染</td></tr>
+</table>
+</section>
+
+<!-- 目录结构 -->
+<section id="structure">
+<h2>📁 目录结构</h2>
+<pre class="code-block"><span class="lang-tag">目录树</span><button class="copy-btn" onclick="copyCode(this)">复制</button>AionUi/
+├── src/                          # 主源码目录
+│   ├── index.ts                  # Electron 主进程入口
+│   ├── preload.ts                # Electron preload 脚本
+│   │
+│   ├── agent/                    # AI Agent 实现层
+│   │   ├── acp/                  # ACP 协议 Agent
+│   │   ├── codex/                # Codex Agent
+│   │   ├── gemini/               # Gemini Agent
+│   │   ├── nanobot/              # NanoBot Agent
+│   │   └── openclaw/             # OpenClaw Agent
+│   │
+│   ├── channels/                 # 多平台消息通道框架
+│   │   ├── core/                 # 核心编排层
+│   │   ├── gateway/              # 网关层
+│   │   ├── agent/                # Agent 集成层
+│   │   ├── actions/              # Action 处理器
+│   │   ├── pairing/              # 用户授权配对
+│   │   ├── plugins/              # 平台插件 (telegram/lark/dingtalk)
+│   │   └── utils/                # 工具函数
+│   │
+│   ├── common/                   # 公共模块
+│   │   ├── ApiKeyManager.ts      # API Key 管理
+│   │   ├── ClientFactory.ts      # 客户端工厂
+│   │   ├── RotatingApiClient.ts  # API Key 轮换
+│   │   ├── ipcBridge.ts          # IPC 通信桥
+│   │   ├── approval/             # 工具调用审批
+│   │   └── document/             # 文档处理
+│   │
+│   ├── process/                  # 主进程业务逻辑
+│   │   ├── WorkerManage.ts       # Agent 进程/任务管理器
+│   │   ├── bridge/               # 进程间通信
+│   │   ├── database/             # SQLite 数据库层
+│   │   ├── services/             # 服务层 (cron, MCP)
+│   │   └── task/                 # Agent 任务管理器
+│   │
+│   ├── renderer/                 # 渲染进程（前端 UI）
+│   │   ├── main.tsx              # React 入口
+│   │   ├── router.tsx            # 路由配置
+│   │   ├── pages/                # 页面 (conversation/cron/settings...)
+│   │   ├── components/           # 通用组件
+│   │   ├── hooks/                # 自定义 Hooks
+│   │   └── i18n/                 # 国际化
+│   │
+│   ├── webserver/                # WebUI 服务器
+│   │   ├── index.ts              # Express + WebSocket 入口
+│   │   ├── auth/                 # 认证模块
+│   │   ├── routes/               # API 路由
+│   │   └── websocket/            # WebSocket 处理
+│   │
+│   └── worker/                   # Worker 进程
+│       ├── acp.ts / codex.ts     # 各 Agent Worker
+│       ├── gemini.ts / nanobot.ts
+│       └── openclaw-gateway.ts
+│
+├── assistant/                    # AI 助手定义（Markdown，中英双语）
+│   ├── cowork/                   # Cowork 助手
+│   ├── pptx-generator/           # PPT 生成助手
+│   ├── game-3d/                  # 3D 游戏生成助手
+│   └── ...                       # 共 11 个专业助手
+│
+├── skills/                       # 技能插件系统
+│   ├── docx/ xlsx/ pptx/ pdf/    # 文档技能
+│   ├── mermaid/                  # 图表技能
+│   ├── skill-creator/            # 技能创建器
+│   └── ...                       # 共 11 个技能插件
+│
+├── config/webpack/               # Webpack 配置
+├── scripts/                      # 构建/发布脚本
+├── tests/                        # 测试文件
+└── docs/                         # 文档站点</pre>
+</section>
+
+<!-- Agent 系统 -->
+<section id="agent">
+<h2>🤖 Agent 系统</h2>
+<p>Agent 系统是 AionUi 的核心，负责与各种 CLI AI 工具的集成和通信。所有 Agent 继承自 <code>AgentBaseTask</code> 基类，由 <code>WorkerManage</code> 统一调度。</p>
+
+<h3>Agent 类型</h3>
+<table>
+<tr><th>Agent</th><th>目录</th><th>说明</th></tr>
+<tr><td>GeminiAgentManager</td><td>src/agent/gemini/</td><td>内置 Gemini CLI 集成，支持 web 搜索、技能加载、会话恢复</td></tr>
+<tr><td>AcpAgentManager</td><td>src/agent/acp/</td><td>ACP 协议 Agent，用于 Claude Code、Qwen Code 等</td></tr>
+<tr><td>CodexAgentManager</td><td>src/agent/codex/</td><td>OpenAI Codex 集成，四层架构 (connection/core/handlers/messaging)</td></tr>
+<tr><td>NanoBotAgentManager</td><td>src/agent/nanobot/</td><td>NanoBot Agent 集成</td></tr>
+<tr><td>OpenClawAgentManager</td><td>src/agent/openclaw/</td><td>OpenClaw 网关 Agent</td></tr>
 </table>
 
+<h3>核心调度：WorkerManage</h3>
+<p><code>WorkerManage</code> 是 Agent 系统的中枢调度器，位于 <code>src/process/WorkerManage.ts</code>。它负责：</p>
+<ul>
+<li>根据会话类型（gemini/acp/codex/nanobot/openclaw）创建对应的 Agent 实例</li>
+<li>Agent 实例缓存复用，避免重复创建</li>
+<li>支持 <strong>yoloMode</strong>（自动审批工具调用，无需人工确认）</li>
+<li>管理 Agent 生命周期（启动、停止、重启）</li>
+</ul>
+
+<h3>Agent 工作流程</h3>
+<pre class="code-block"><span class="lang-tag">流程图</span><button class="copy-btn" onclick="copyCode(this)">复制</button>用户输入消息
+    │
+    ▼
+WorkerManage.buildConversation()
+    │
+    ├── 检查会话类型 (gemini/acp/codex/nanobot/openclaw)
+    │
+    ▼
+创建/复用对应 AgentManager 实例
+    │
+    ▼
+Agent 调用 CLI 工具执行任务
+    │
+    ├── 工具调用审批 (approval/) ← yoloMode 可跳过
+    │
+    ▼
+流式返回结果 → 渲染到 UI</pre>
+
+<h3>Worker 进程隔离</h3>
+<p>每个 Agent 运行在独立的 Worker 进程中（<code>src/worker/</code>），通过 Electron 的 <code>utilityProcess.fork()</code> 创建。这样做的好处：</p>
+<ul>
+<li>Agent 崩溃不会影响主进程和 UI</li>
+<li>多个 Agent 可以并行运行</li>
+<li>资源隔离，避免内存泄漏互相影响</li>
+</ul>
+</section>
+
+<!-- Channels 消息框架 -->
+<section id="channels">
+<h2>📡 Channels 消息框架</h2>
+<p>Channels 是 AionUi 的多平台消息通道框架，采用分层架构设计，实现平台无关的统一消息协议。</p>
+
+<h3>四层架构</h3>
+<pre class="code-block"><span class="lang-tag">架构图</span><button class="copy-btn" onclick="copyCode(this)">复制</button>┌─────────────────────────────────────────────────┐
+│              Plugin Layer（插件层）                │
+│  ┌──────────┐ ┌──────────┐ ┌──────────────────┐  │
+│  │ Telegram │ │   Lark   │ │    DingTalk      │  │
+│  │  Plugin  │ │  Plugin  │ │     Plugin       │  │
+│  └────┬─────┘ └────┬─────┘ └───────┬──────────┘  │
+│       │             │               │             │
+├───────┼─────────────┼───────────────┼─────────────┤
+│       ▼             ▼               ▼             │
+│            Gateway Layer（网关层）                  │
+│  ┌─────────────────────────────────────────────┐  │
+│  │  PluginManager → ActionExecutor → Router    │  │
+│  └──────────────────┬──────────────────────────┘  │
+│                     │                             │
+├─────────────────────┼─────────────────────────────┤
+│                     ▼                             │
+│              Core Layer（核心层）                   │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────┐  │
+│  │ChannelManager│ │SessionManager│ │ Pairing  │  │
+│  │  (单例编排)   │ │ (会话隔离)   │ │ Service  │  │
+│  └──────┬───────┘ └──────────────┘ └──────────┘  │
+│         │                                         │
+├─────────┼─────────────────────────────────────────┤
+│         ▼                                         │
+│            Agent Layer（AI Agent 层）              │
+│  ┌─────────────────────────────────────────────┐  │
+│  │  ChannelEventBus ←→ ChannelMessageService   │  │
+│  │         ↕                    ↕               │  │
+│  │    WorkerManage ←→ AgentManager 实例         │  │
+│  └─────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────┘</pre>
+
+<h3>核心组件</h3>
+<table>
+<tr><th>组件</th><th>职责</th></tr>
+<tr><td>ChannelManager</td><td>单例编排器，管理所有子系统生命周期</td></tr>
+<tr><td>PluginManager</td><td>插件注册、生命周期管理、状态推送</td></tr>
+<tr><td>ActionExecutor</td><td>消息路由 → Action 执行 → AI 对话</td></tr>
+<tr><td>SessionManager</td><td>per-chat 会话隔离，内存缓存 + DB 持久化</td></tr>
+<tr><td>PairingService</td><td>配对码生成、审批、过期清理</td></tr>
+<tr><td>ChannelEventBus</td><td>全局事件总线（Agent → Channel）</td></tr>
+<tr><td>ChannelMessageService</td><td>消息发送与流回调管理</td></tr>
+</table>
+
+<h3>统一消息协议</h3>
+<p>所有平台插件将原生消息转换为 <code>IUnifiedIncomingMessage</code>，回复通过 <code>IUnifiedOutgoingMessage</code> 发出，由各平台适配器转回原生格式。这种设计让新增平台只需实现一个插件适配器即可。</p>
+
+<pre class="code-block"><span class="lang-tag">TypeScript</span><button class="copy-btn" onclick="copyCode(this)">复制</button>// 统一入站消息
+interface IUnifiedIncomingMessage {
+  platform: 'telegram' | 'lark' | 'dingtalk';
+  chatId: string;
+  userId: string;
+  text: string;
+  attachments?: IAttachment[];
+}
+
+// 统一出站消息
+interface IUnifiedOutgoingMessage {
+  chatId: string;
+  text?: string;
+  markdown?: string;
+  attachments?: IAttachment[];
+}</pre>
+</section>
+
+<!-- WebUI 服务器 -->
+<section id="webui">
+<h2>🌐 WebUI 服务器</h2>
+<p>基于 Express 5 + WebSocket 的远程访问服务，让用户可以通过浏览器远程使用 AionUi。</p>
+
+<h3>技术架构</h3>
+<pre class="code-block"><span class="lang-tag">架构图</span><button class="copy-btn" onclick="copyCode(this)">复制</button>┌──────────────┐     HTTP/WS      ┌──────────────────┐
+│   浏览器客户端  │ ◄──────────────► │   Express 5 服务   │
+│  (React SPA)  │                 │                  │
+└──────────────┘                 ├── auth/          │
+                                 │   ├── JWT 认证    │
+                                 │   └── bcrypt 加密  │
+                                 ├── routes/        │
+                                 │   ├── API 路由    │
+                                 │   └── 静态文件     │
+                                 ├── websocket/     │
+                                 │   └── 实时消息推送  │
+                                 └── config/        │
+                                     └── 服务器配置   │
+                                 └──────────────────┘</pre>
+
+<h3>核心特性</h3>
+<ul>
+<li><strong>多种登录方式</strong> — QR 码扫描登录 / 账号密码登录</li>
+<li><strong>安全防护</strong> — JWT 认证 + bcrypt 密码加密 + CSRF 保护 + CORS + Rate Limiting</li>
+<li><strong>网络适配</strong> — 自动检测 LAN IP / 公网 IP，支持局域网、跨网络和服务器部署</li>
+<li><strong>实时通信</strong> — WebSocket 实时消息推送，支持流式输出</li>
+<li><strong>Linux Headless</strong> — 支持无桌面环境的 Linux 服务器部署</li>
+</ul>
+</section>
+
+<!-- 渲染进程 UI -->
+<section id="renderer">
+<h2>🎨 渲染进程 UI</h2>
+<p>React 19 单页应用，使用 Arco Design 组件库 + UnoCSS 原子化样式，通过 Electron IPC 与主进程通信。</p>
+
+<h3>页面路由</h3>
+<table>
+<tr><th>路由</th><th>页面</th><th>说明</th></tr>
+<tr><td>/guid</td><td>引导页</td><td>首页 / 新建对话入口</td></tr>
+<tr><td>/conversation/:id</td><td>对话页</td><td>核心交互界面，按 Agent 类型分子页面</td></tr>
+<tr><td>/settings/*</td><td>设置页</td><td>Gemini / 模型 / Agent / 显示 / WebUI / 系统 / 工具</td></tr>
+<tr><td>/cron</td><td>定时任务页</td><td>管理定时任务</td></tr>
+<tr><td>/login</td><td>登录页</td><td>WebUI 认证</td></tr>
+</table>
+
+<h3>对话页架构</h3>
+<p>对话页是最核心的页面，根据不同 Agent 类型渲染不同的子页面：</p>
+<pre class="code-block"><span class="lang-tag">目录树</span><button class="copy-btn" onclick="copyCode(this)">复制</button>pages/conversation/
+├── gemini/          # Gemini 对话界面
+├── acp/             # ACP (Claude Code 等) 对话界面
+├── codex/           # Codex 对话界面
+├── nanobot/         # NanoBot 对话界面
+├── openclaw/        # OpenClaw 对话界面
+└── preview/         # 预览面板系统
+    ├── html/        # HTML 预览
+    ├── markdown/    # Markdown 预览
+    ├── mermaid/     # 图表预览
+    ├── code/        # 代码预览 (Monaco Editor)
+    └── ...</pre>
+
+<h3>预览面板</h3>
+<p>对话页内置了强大的预览面板系统，支持 10+ 种文件格式的实时预览和编辑：</p>
+<ul>
+<li><strong>代码</strong> — Monaco Editor，语法高亮、智能补全</li>
+<li><strong>Markdown</strong> — 实时渲染，支持 KaTeX 数学公式</li>
+<li><strong>HTML</strong> — iframe 沙箱预览</li>
+<li><strong>Mermaid</strong> — 流程图、时序图等图表渲染</li>
+<li><strong>Diff</strong> — diff2html 文件差异对比</li>
+<li><strong>文档</strong> — Word / Excel / PPT / PDF 预览</li>
+</ul>
+
+<h3>IPC 通信桥</h3>
+<p>渲染进程通过 <code>ipcBridge</code> 与主进程通信，所有 API 调用都经过 Electron 的 <code>contextBridge</code> 安全暴露：</p>
+<pre class="code-block"><span class="lang-tag">TypeScript</span><button class="copy-btn" onclick="copyCode(this)">复制</button>// preload.ts - 安全暴露 API
+contextBridge.exposeInMainWorld('electronAPI', {
+  sendMessage: (conversationId, message) =>
+    ipcRenderer.invoke('send-message', conversationId, message),
+  onStreamChunk: (callback) =>
+    ipcRenderer.on('stream-chunk', callback),
+  getSettings: () =>
+    ipcRenderer.invoke('get-settings'),
+});</pre>
+</section>
+
+<!-- 定时任务系统 -->
+<section id="cron">
+<h2>⏰ 定时任务系统</h2>
+<p>基于 <code>croner</code> 库实现的定时任务调度系统，支持自然语言设置任务时间。</p>
+
+<h3>核心特性</h3>
+<ul>
+<li><strong>Cron 表达式</strong> — 标准 cron 语法，精确控制执行时间</li>
+<li><strong>自然语言</strong> — 支持"每天早上9点"这样的自然语言描述</li>
+<li><strong>会话绑定</strong> — 每个定时任务绑定到特定会话，保持上下文连续性</li>
+<li><strong>yoloMode</strong> — 自动审批工具调用，无需人工确认</li>
+<li><strong>持久化</strong> — 任务配置存储在 SQLite 中，重启后自动恢复</li>
+</ul>
+
+<h3>工作流程</h3>
+<pre class="code-block"><span class="lang-tag">流程图</span><button class="copy-btn" onclick="copyCode(this)">复制</button>用户设置定时任务（自然语言 / cron 表达式）
+    │
+    ▼
+CronService 解析并注册任务
+    │
+    ▼
+croner 库按时触发
+    │
+    ▼
+恢复绑定的会话上下文
+    │
+    ▼
+Agent 执行任务（自动审批模式）
+    │
+    ▼
+结果推送到对话 / Channel</pre>
+</section>
+
+<!-- 助手与技能系统 -->
+<section id="skills">
+<h2>🧩 助手与技能系统</h2>
+
+<h3>助手系统 (assistant/)</h3>
+<p>助手通过 Markdown 文件定义，包含系统提示词和能力描述，支持中英双语。每个助手是一个独立目录：</p>
+<pre class="code-block"><span class="lang-tag">目录树</span><button class="copy-btn" onclick="copyCode(this)">复制</button>assistant/
+├── cowork/                   # Cowork 协作助手
+├── pptx-generator/           # PPT 生成助手
+├── pdf-to-ppt/               # PDF 转 PPT 助手
+├── game-3d/                  # 3D 游戏生成助手
+├── ui-ux-pro-max/            # UI/UX 设计助手
+├── planning-with-files/      # 文件规划助手
+├── human-3-coach/            # 个人发展教练
+├── social-job-publisher/     # 招聘发布助手
+├── moltbook/                 # 社交网络助手
+├── beautiful-mermaid/        # Mermaid 图表助手
+└── openclaw-setup/           # OpenClaw 配置助手</pre>
+
+<h3>技能系统 (skills/)</h3>
+<p>技能是可插拔的功能模块，每个技能包含 <code>SKILL.md</code> 定义文件，可为助手启用或禁用。</p>
+
+<table>
+<tr><th>技能</th><th>功能</th></tr>
+<tr><td>docx</td><td>Word 文档生成与编辑</td></tr>
+<tr><td>xlsx</td><td>Excel 表格处理</td></tr>
+<tr><td>pptx</td><td>PPT 演示文稿生成</td></tr>
+<tr><td>pdf</td><td>PDF 文档处理</td></tr>
+<tr><td>mermaid</td><td>Mermaid 图表生成</td></tr>
+<tr><td>skill-creator</td><td>技能创建器（创建新技能）</td></tr>
+<tr><td>moltbook</td><td>Moltbook 社交网络集成</td></tr>
+<tr><td>openclaw-setup</td><td>OpenClaw 环境配置</td></tr>
+<tr><td>aionui-webui-setup</td><td>WebUI 服务配置</td></tr>
+<tr><td>x-recruiter</td><td>X 平台招聘发布</td></tr>
+<tr><td>xiaohongshu-recruiter</td><td>小红书招聘发布</td></tr>
+</table>
+
+<h3>技能加载机制</h3>
+<pre class="code-block"><span class="lang-tag">TypeScript</span><button class="copy-btn" onclick="copyCode(this)">复制</button>// 技能定义结构 (SKILL.md)
+// 每个技能目录包含：
+// - SKILL.md      → 技能描述、使用说明
+// - scripts/      → 可执行脚本
+// - assets/       → 静态资源
+
+// Agent 加载技能时，将 SKILL.md 内容
+// 注入到系统提示词中，扩展 Agent 能力</pre>
+</section>
+
+<!-- 架构设计 -->
+<section id="architecture">
+<h2>🏗️ 架构设计</h2>
+
+<h3>整体架构</h3>
+<pre class="code-block"><span class="lang-tag">架构图</span><button class="copy-btn" onclick="copyCode(this)">复制</button>┌─────────────────────────────────────────────────────────────┐
+│                    AionUi 整体架构                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              渲染进程 (Renderer Process)              │    │
+│  │  ┌─────────┐ ┌──────────┐ ┌────────┐ ┌──────────┐  │    │
+│  │  │ 对话页面  │ │  设置页面  │ │ 定时任务 │ │  预览面板  │  │    │
+│  │  └────┬────┘ └─────┬────┘ └───┬────┘ └────┬─────┘  │    │
+│  │       └────────────┴──────────┴────────────┘        │    │
+│  │                    IPC Bridge                        │    │
+│  └────────────────────────┬────────────────────────────┘    │
+│                           │                                 │
+│  ┌────────────────────────┼────────────────────────────┐    │
+│  │              主进程 (Main Process)                    │    │
+│  │                        │                            │    │
+│  │  ┌─────────────────────▼──────────────────────┐     │    │
+│  │  │            WorkerManage (调度中枢)           │     │    │
+│  │  └──┬──────┬──────┬──────┬──────┬─────────────┘     │    │
+│  │     │      │      │      │      │                   │    │
+│  │     ▼      ▼      ▼      ▼      ▼                   │    │
+│  │  ┌──────┐┌────┐┌─────┐┌───────┐┌────────┐          │    │
+│  │  │Gemini││ACP ││Codex││NanoBot││OpenClaw│          │    │
+│  │  │Worker││Work││Work ││Worker ││ Worker │          │    │
+│  │  └──────┘└────┘└─────┘└───────┘└────────┘          │    │
+│  │                                                     │    │
+│  │  ┌──────────────┐ ┌────────────┐ ┌──────────────┐  │    │
+│  │  │ChannelManager│ │ CronService│ │  WebServer   │  │    │
+│  │  │ (消息通道)    │ │ (定时任务)  │ │ (远程访问)   │  │    │
+│  │  └──────────────┘ └────────────┘ └──────────────┘  │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │                  外部连接                             │    │
+│  │  ┌────────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌────────┐  │    │
+│  │  │Telegram│ │ 飞书  │ │ 钉钉  │ │WebUI │ │CLI工具  │  │    │
+│  │  └────────┘ └──────┘ └──────┘ └──────┘ └────────┘  │    │
+│  └─────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘</pre>
+
+<h3>关键设计模式</h3>
+<ul>
+<li><strong>多进程架构</strong> — 主进程 + 渲染进程 + 多个 Worker 进程，进程隔离保证稳定性</li>
+<li><strong>插件化设计</strong> — Channels 插件、技能插件、助手插件，三套独立的插件体系</li>
+<li><strong>适配器模式</strong> — 统一消息协议屏蔽平台差异，新增平台只需实现适配器</li>
+<li><strong>工厂模式</strong> — ClientFactory 根据配置创建不同的 LLM 客户端</li>
+<li><strong>单例模式</strong> — ChannelManager、WorkerManage 等核心管理器采用单例</li>
+<li><strong>事件驱动</strong> — ChannelEventBus 实现 Agent 与 Channel 的解耦通信</li>
+<li><strong>API Key 轮换</strong> — RotatingApiClient 自动轮换多个 API Key，提高可用性</li>
+</ul>
+
+<h3>数据流</h3>
+<pre class="code-block"><span class="lang-tag">数据流</span><button class="copy-btn" onclick="copyCode(this)">复制</button>消息输入（UI / Telegram / 飞书 / 钉钉 / WebUI）
+    │
+    ▼
+统一消息格式 (IUnifiedIncomingMessage)
+    │
+    ▼
+ActionExecutor 路由分发
+    │
+    ├── 系统命令 → 直接处理（/help, /settings 等）
+    │
+    ▼
+SessionManager 获取/创建会话
+    │
+    ▼
+WorkerManage 分配 Agent Worker
+    │
+    ▼
+Agent 执行（调用 LLM API + 工具调用）
+    │
+    ├── 工具调用 → approval 审批 → 执行 → 返回结果
+    │
+    ▼
+流式响应 → ChannelMessageService
+    │
+    ▼
+统一出站格式 (IUnifiedOutgoingMessage)
+    │
+    ▼
+平台适配器转换 → 发送到对应平台</pre>
+</section>
+
+<!-- 主要功能 -->
+<section id="features">
+<h2>✨ 主要功能</h2>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:16px;">
+
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="color:var(--accent);margin-bottom:8px;">🤖 多 Agent 统一管理</h4>
+<p style="font-size:14px;color:var(--text2);">一个界面管理 Gemini CLI、Claude Code、Codex、Qwen Code、Goose AI、OpenClaw、Auggie 等 15+ 种 CLI AI 工具</p>
+</div>
+
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="color:var(--green);margin-bottom:8px;">🧠 多模型支持</h4>
+<p style="font-size:14px;color:var(--text2);">支持 20+ AI 平台，包括 Gemini、Claude、OpenAI、AWS Bedrock，API Key 轮换保证高可用</p>
+</div>
+
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="color:var(--orange);margin-bottom:8px;">📡 多平台消息</h4>
+<p style="font-size:14px;color:var(--text2);">Telegram、飞书、钉钉三大平台集成，统一消息协议，配对码授权</p>
+</div>
+
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="color:var(--pink);margin-bottom:8px;">🌐 WebUI 远程访问</h4>
+<p style="font-size:14px;color:var(--text2);">Express + WebSocket 服务，支持局域网和公网访问，QR 码登录</p>
+</div>
+
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="color:var(--purple);margin-bottom:8px;">📄 文档处理</h4>
+<p style="font-size:14px;color:var(--text2);">Word、Excel、PPT、PDF 全格式支持，AI 驱动的文档生成与转换</p>
+</div>
+
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="color:var(--cyan);margin-bottom:8px;">⏰ 定时任务</h4>
+<p style="font-size:14px;color:var(--text2);">自然语言设置定时任务，绑定会话上下文，自动执行</p>
+</div>
+
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="color:var(--yellow);margin-bottom:8px;">🧩 助手与技能</h4>
+<p style="font-size:14px;color:var(--text2);">11 个专业助手 + 11 个技能插件，Markdown 定义，可扩展</p>
+</div>
+
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="color:var(--red);margin-bottom:8px;">🔒 安全机制</h4>
+<p style="font-size:14px;color:var(--text2);">工具调用审批、JWT 认证、bcrypt 加密、CSRF 防护、配对码授权</p>
+</div>
+
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="color:var(--accent);margin-bottom:8px;">🌍 国际化</h4>
+<p style="font-size:14px;color:var(--text2);">内置 i18n 支持，助手定义中英双语，界面多语言切换</p>
+</div>
+
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="color:var(--green);margin-bottom:8px;">🖥️ 跨平台桌面</h4>
+<p style="font-size:14px;color:var(--text2);">Electron 37 构建，支持 macOS、Windows、Linux，Homebrew 一键安装</p>
+</div>
+
+</div>
+</section>
+
+<!-- 总结 -->
+<section id="summary">
+<h2>📝 总结</h2>
+<p>AionUi 是一个架构精良的多 Agent 桌面应用，核心设计亮点：</p>
+<ul>
+<li><strong>多进程 + Worker 隔离</strong> — 每个 Agent 独立进程，崩溃不影响全局</li>
+<li><strong>四层 Channels 架构</strong> — 插件层 → 网关层 → 核心层 → Agent 层，平台无关的统一消息协议</li>
+<li><strong>三套插件体系</strong> — Channels 插件（平台接入）、技能插件（功能扩展）、助手插件（角色定义），各自独立可扩展</li>
+<li><strong>全栈 TypeScript</strong> — 前后端统一语言，类型安全贯穿整个项目</li>
+<li><strong>安全优先</strong> — 工具调用审批、配对码授权、JWT + bcrypt，多层安全防护</li>
+</ul>
+<p>项目从 2025 年 8 月创建至今，已积累 16K+ Star，是 Claude Cowork 最有力的开源替代方案。</p>
+</section>
+
+</main>
+
+<!-- 滚动高亮导航 -->
+<script>
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.sidebar nav a');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(link => link.classList.remove('active'));
+      const activeLink = document.querySelector(`.sidebar nav a[href="#${entry.target.id}"]`);
+      if (activeLink) activeLink.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(section => observer.observe(section));
+</script>
+
+</body>
+</html>
